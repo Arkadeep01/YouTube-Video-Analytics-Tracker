@@ -5,7 +5,7 @@ from typing import Union
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# from api.db.session import init_db
+from api.db.session import init_db
 from api.video_events.routing import router as video_events_router
 # from api.watch_sessions.routing import router as watch_sessions_router
 
@@ -29,7 +29,7 @@ origins = [
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # before app startup up
-    # init_db()
+    init_db()
     yield
     # clean up
 

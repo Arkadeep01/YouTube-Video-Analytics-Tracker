@@ -1,6 +1,6 @@
 "use client";
 
-import useWatchSession from "@/hooks/useWatchSession"
+// import useWatchSession from "@/hooks/useWatchSession"
 import useYouTubePlayer from "@/hooks/useYoutubePlayer"
 import { useSearchParams } from "next/navigation"
 import { useCallback, useEffect } from "react"
@@ -11,7 +11,7 @@ const FASTAPI_ENDPOINT = "http://localhost:8002/api/video-events/"
 export default function WatchPage() {
   const searchParams = useSearchParams()
   const { v: video_id, t: startTime } = Object.fromEntries(searchParams)
-  const session_id = useWatchSession(video_id)
+  // const session_id = useWatchSession(video_id)
 
   const playerElementId = "youtube-player"
   const playerState = useYouTubePlayer(video_id, playerElementId, startTime, 1500)
@@ -36,7 +36,8 @@ export default function WatchPage() {
     } catch (error) {
       console.log(error)
     }
-  }, [video_id, session_id])
+  // }, [video_id, session_id])
+  }, [video_id])
 
   
   useEffect(() => {
