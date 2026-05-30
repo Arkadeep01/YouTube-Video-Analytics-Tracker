@@ -79,7 +79,7 @@ def get_top_video_stats(
         )
         .order_by(
             bucket.desc(),
-            unique_views.desc(),
+            func.max(YouTubeWatchEvent.current_time).desc(),
             YouTubeWatchEvent.video_id
         )
 
