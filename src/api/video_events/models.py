@@ -9,7 +9,7 @@ class YouTubeVideoData(BaseModel):
   title: str
 
 class YouTubeWatchEvent(TimescaleModel, table=True):
-  id: Optional[int] = Field(default=None, primary_key=True)
+  id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
   is_ready: bool 
   video_id: str = Field(index=True)
   video_title: str

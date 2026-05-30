@@ -40,13 +40,13 @@ const useYouTubePlayer = (
       const videoData = playerRef.current.getVideoData();
       const currentTimeSeconds = playerRef.current.getCurrentTime();
       const videoStateValue = playerInfo.playerState ?? -1;
-      const videoStateLabel =
+      const video_state_label =
         getKeyByValue(YTPlayerStateObj, videoStateValue) || "UNSTARTED";
       setPlayerState((prev) => ({
         ...prev,
         video_title: videoData?.title || "",
         current_time: currentTimeSeconds || 0,
-        video_state_label: videoStateLabel,
+        video_state_label: video_state_label,
         video_state_value: videoStateValue,
       }));
     } catch (error) {
