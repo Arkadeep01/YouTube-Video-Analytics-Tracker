@@ -4,7 +4,7 @@ import useWatchSession from "@/hooks/useWatchSession"
 import useYouTubePlayer from "@/hooks/useYoutubePlayer"
 import { useSearchParams } from "next/navigation"
 import { useCallback, useEffect } from "react"
-// import MetricsTable from "./metricsTable"
+import MetricsTable from "./metricsTable"
 
 const FASTAPI_ENDPOINT = "http://localhost:8002/api/video-events/"
 
@@ -61,7 +61,7 @@ export default function WatchPage() {
       </div>
 
       <h1 className='text-xl'>{playerState.video_title}</h1>
-      {/* <MetricsTable videoId={video_id} /> */}
+      <MetricsTable videoId={video_id} />
     </div>
   </>
 }
