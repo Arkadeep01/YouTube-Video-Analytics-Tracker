@@ -47,7 +47,6 @@ export default function YouTubeUrlForm() {
               Play
             </button>
           </div>
-          <div>{videoData && JSON.stringify(videoData)}</div>
         </div>
       </div>
     </form>
