@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 const FASTAPI_ENDPOINT = "http://localhost:8002/api/video-events/top";
@@ -68,6 +69,7 @@ export default function TopVideosPreview() {
             >
               <div className="mb-4 flex items-center justify-between">
                 <div className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
+                  
                   #{index + 1}
                 </div>
 
@@ -76,9 +78,13 @@ export default function TopVideosPreview() {
                 </div>
               </div>
 
-              <h3 className="truncate font-mono text-lg font-bold">
-                {video.video_id}
-              </h3>
+              <div className="mb-4 overflow-hidden rounded-xl">
+                <img
+                  src={`https://img.youtube.com/vi/${video.video_id}/hqdefault.jpg`}
+                  alt={video.video_id}
+                  className="h-48 w-full object-cover transition group-hover:scale-105"
+                />
+              </div>
 
               <div className="mt-6 grid grid-cols-2 gap-4">
                 <div>
