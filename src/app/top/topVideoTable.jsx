@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import useSWR from "swr";
 
-const FASTAPI_ENDPOINT = "http://localhost:8002/api/video-events/top";
+const FASTAPI_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}/api/video-events/top`;
 
 function formatTime(seconds) {
   if (!seconds) return "0s";

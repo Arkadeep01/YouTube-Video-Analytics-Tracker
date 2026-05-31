@@ -3,7 +3,7 @@
 import TimeBucketSelector from "@/components/TimeBucketSelector";
 import { useEffect, useState } from "react";
 
-const FASTAPI_ENDPOINT = "http://localhost:8002/api/video-events/";
+const FASTAPI_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}/api/video-events/`;
 
 function formatTime(seconds) {
   if (!seconds) return "0s";

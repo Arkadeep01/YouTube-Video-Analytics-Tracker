@@ -5,19 +5,29 @@ import useYouTubePlayer from "@/hooks/useYoutubePlayer";
 import ActivityGraph from "@/components/ActivityGraph";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import MetricsTable from "./metricsTable";
 
-const FASTAPI_ENDPOINT = "http://localhost:8002/api/video-events/";
+const FASTAPI_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}/api/video-events/`;
 
-export default function WatchPage() {
+function WatchContent() {
   const searchParams = useSearchParams();
+
   const video_id = searchParams.get("v");
   const startTime = searchParams.get("t") || undefined;
+
   const [graphData, setGraphData] = useState([]);
   const session_id = useWatchSession(video_id);
+
   const playerElementId = "youtube-player";
-  const playerState = useYouTubePlayer(video_id, playerElementId, startTime, 1500);
+
+  const playerState = useYouTubePlayer(
+    video_id,
+    playerElementId,
+    startTime,
+    1500
+  );
+
   const updateBackend = useCallback(
     async (currentPlayerState) => {
       const headers = {};
@@ -55,8 +65,9 @@ export default function WatchPage() {
   useEffect(() => {
     if (!playerState.is_ready) return;
     if (playerState.video_state_label !== "PLAYING") return;
+
     updateBackend(playerState);
-  }, [ playerState, updateBackend ]);
+  }, [playerState, updateBackend]);
 
   useEffect(() => {
     async function loadGraph() {
@@ -64,7 +75,7 @@ export default function WatchPage() {
 
       try {
         const res = await fetch(
-          `http://localhost:8002/api/video-events/${video_id}?bucket=5%20minutes&hours-ago=1&hours-until=0`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/video-events/${video_id}?bucket=5%20minutes&hours-ago=1&hours-until=0`
         );
 
         if (!res.ok) return;
@@ -84,13 +95,9 @@ export default function WatchPage() {
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-6 py-8">
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-
-          {/* LEFT */}
           <div>
-
             <div className="overflow-hidden rounded-2xl border border-border bg-card">
               <div className="p-6">
-
                 <div
                   id="video-container"
                   className="relative w-full overflow-hidden rounded-xl border border-border"
@@ -124,23 +131,18 @@ export default function WatchPage() {
               </div>
             </div>
 
-            {/* GRAPH */}
             <div className="mt-6">
               <ActivityGraph data={graphData} />
             </div>
-
           </div>
 
-          {/* RIGHT */}
           <div className="space-y-6">
-
             <div className="rounded-2xl border border-border bg-card p-6">
               <h3 className="mb-6 text-xl font-bold">
                 Session
               </h3>
 
               <div className="space-y-4 text-sm">
-
                 <div className="flex justify-between gap-3">
                   <span className="text-muted-foreground">
                     Session ID
@@ -182,16 +184,21 @@ export default function WatchPage() {
                     {Math.floor(playerState.current_time || 0)}s
                   </span>
                 </div>
-
-
               </div>
             </div>
 
-            {/* TABLE BELOW GRAPH */}
             <MetricsTable videoId={video_id} />
           </div>
         </div>
       </div>
     </main>
+  );
+}
+
+export default function WatchPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <WatchContent />
+    </Suspense>
   );
 }

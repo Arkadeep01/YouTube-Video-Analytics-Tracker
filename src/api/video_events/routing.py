@@ -6,8 +6,6 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from sqlalchemy import func
 from sqlmodel import Session, select
 
-from timescaledb.hyperfunctions import time_bucket
-from timescaledb.utils import get_utc_now
 from api.utils import parse_int_or_fallback
 
 from api.db.session import get_session
@@ -16,8 +14,23 @@ from .models import YouTubeWatchEvent, YouTubePlayerState, VideoStat
 
 router = APIRouter()
 
+
+def parse_bucket(bucket_param: str, time_col):
+    unit = bucket_param.split()[-1].rstrip("s")
+    trunc_map = {
+        "minute": "minute", "minutes": "minute",
+        "hour": "hour", "hours": "hour",
+        "day": "day", "days": "day",
+        "week": "week", "weeks": "week",
+        "month": "month", "months": "month",
+        "year": "year", "years": "year",
+    }
+    trunc_unit = trunc_map.get(unit, "day")
+    return func.date_trunc(trunc_unit, time_col)
+
+
 @router.post("/")
-def create_video_event(request: Request,payload: YouTubePlayerState, session: Session = Depends(get_session)):
+def create_video_event(request: Request, payload: YouTubePlayerState, session: Session = Depends(get_session)):
   headers = request.headers
   watch_session_id = headers.get('x-session-id')
   print('session id', watch_session_id)
@@ -32,11 +45,11 @@ def create_video_event(request: Request,payload: YouTubePlayerState, session: Se
   obj.id = None
 
   if watch_session_id:
-    watch_session_query = select(WatchSession).where(WatchSession.watch_session_id==watch_session_id)
+    watch_session_query = select(WatchSession).where(WatchSession.watch_session_id == watch_session_id)
     watch_session_obj = session.exec(watch_session_query).first()
     if watch_session_obj:
       obj.watch_session_id = watch_session_id
-      watch_session_obj.last_active = get_utc_now()
+      watch_session_obj.last_active = datetime.now(timezone.utc)
       session.add(watch_session_obj)
 
   session.add(obj)
@@ -49,11 +62,11 @@ def create_video_event(request: Request,payload: YouTubePlayerState, session: Se
 @router.get("/top", response_model=List[VideoStat])
 def get_top_video_stats(
         request: Request,
-        db_session: Session = Depends(get_session)  
+        db_session: Session = Depends(get_session)
     ):
     params = request.query_params
     bucket_param = params.get("bucket") or "1 day"
-    bucket = time_bucket(bucket_param, YouTubeWatchEvent.time)
+    bucket = parse_bucket(bucket_param, YouTubeWatchEvent.time)
     hours_ago = parse_int_or_fallback(params.get("hours-ago"), fallback=10)
     hours_until = parse_int_or_fallback(params.get("hours-until"), fallback=0)
     start = datetime.now(timezone.utc) - timedelta(hours=hours_ago)
@@ -61,11 +74,11 @@ def get_top_video_stats(
     unique_views = func.count(func.distinct(YouTubeWatchEvent.watch_session_id)).label("unique_views")
     query = (
         select(  # pyright: ignore[reportCallIssue]
-            bucket, # 0
-            YouTubeWatchEvent.video_id, # 1
-            func.count().label("total_events"), # 2
-            func.max(YouTubeWatchEvent.current_time).label("max_viewership"), # in seconds
-            func.avg(YouTubeWatchEvent.current_time).label("avg_viewership"), # in seconds
+            bucket,
+            YouTubeWatchEvent.video_id,
+            func.count().label("total_events"),
+            func.max(YouTubeWatchEvent.current_time).label("max_viewership"),
+            func.avg(YouTubeWatchEvent.current_time).label("avg_viewership"),
             unique_views
         )
         .where(
@@ -104,22 +117,22 @@ def get_top_video_stats(
 
 
 @router.get("/{video_id}", response_model=List[VideoStat])
-def get_video_stats(video_id: str, request: Request,session: Session = Depends(get_session)):
+def get_video_stats(video_id: str, request: Request, session: Session = Depends(get_session)):
   params = request.query_params
   bucket_param = params.get("bucket") or "1 day"
-  bucket: Any = time_bucket(bucket_param, YouTubeWatchEvent.time).label("bucket")
+  bucket = parse_bucket(bucket_param, YouTubeWatchEvent.time).label("bucket")
   hours_ago = parse_int_or_fallback(params.get("hours-ago"), fallback=24 * 31 * 3)
   hours_until = parse_int_or_fallback(params.get("hours-until"), fallback=0)
   start = datetime.now(timezone.utc) - timedelta(hours=hours_ago)
   end = datetime.now(timezone.utc) - timedelta(hours=hours_until)
 
   query = (
-    select(   # pyright: ignore[reportCallIssue]
+    select(
       bucket,
       YouTubeWatchEvent.video_id,
       func.count().label("total_events"),
       func.max(YouTubeWatchEvent.current_time).label("max_viewership"),
-      func.avg(YouTubeWatchEvent.current_time).label("avg_viewership"),  
+      func.avg(YouTubeWatchEvent.current_time).label("avg_viewership"),
       func.count(func.distinct(YouTubeWatchEvent.watch_session_id)).label("unique_views"),
     )
     .where (
@@ -171,7 +184,7 @@ def get_video_stats(video_id: str, request: Request,session: Session = Depends(g
     )
 
   print("=" * 50)
-  
+
   try:
     results = session.exec(query).fetchall()
   except:
@@ -179,7 +192,7 @@ def get_video_stats(video_id: str, request: Request,session: Session = Depends(g
         status_code=400,
         detail='Invalid query'
     )
-  
+
   results = [
     VideoStat(
     time=x[0],

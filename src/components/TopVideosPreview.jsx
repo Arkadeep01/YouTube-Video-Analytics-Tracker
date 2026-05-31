@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-const FASTAPI_ENDPOINT = "http://localhost:8002/api/video-events/top";
+const FASTAPI_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}/api/video-events/top`;
 
 function formatTime(seconds) {
   if (!seconds) return "0s";
@@ -79,9 +79,11 @@ export default function TopVideosPreview() {
               </div>
 
               <div className="mb-4 overflow-hidden rounded-xl">
-                <img
+                <Image
                   src={`https://img.youtube.com/vi/${video.video_id}/hqdefault.jpg`}
                   alt={video.video_id}
+                  width={480}
+                  height={360}
                   className="h-48 w-full object-cover transition group-hover:scale-105"
                 />
               </div>

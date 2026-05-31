@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const FASTAPI_ENDPOINT = "http://localhost:8002/api/watch-sessions/";
+const FASTAPI_ENDPOINT = `${process.env.NEXT_PUBLIC_API_URL}/api/watch-sessions/`;
 const API_WATCH_SESSION_STORAGE_KEY = "watch_session";
 
 export default function useWatchSession(video_id) {

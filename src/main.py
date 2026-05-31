@@ -9,30 +9,32 @@ from api.db.session import init_db
 from api.video_events.routing import router as video_events_router
 from api.watch_sessions.routing import router as watch_sessions_router
 
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS")
 HOST = os.environ.get("HOST")
 HOST_SCHEME = os.environ.get("HOST_SCHEME")
 HOST_PORT = os.environ.get("HOST_PORT")
 
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+origins = []
 
-if all([HOST, HOST_SCHEME, HOST_PORT]):
+if ALLOWED_ORIGINS:
+    origins = [o.strip() for o in ALLOWED_ORIGINS.split(",")]
+elif all([HOST, HOST_SCHEME, HOST_PORT]):
     origins.append(f"{HOST_SCHEME}://{HOST}:{HOST_PORT}")
     origins.append(f"{HOST_SCHEME}://{HOST}")
 
 if not origins:
-    origins = ["http://localhost:3000"]
+    origins = ["*"]
 
 print(f"[CORS] allow_origins = {origins!r}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # before app startup up
-    init_db()
+    try:
+        init_db()
+    except Exception as e:
+        print(f"[ERROR] Database initialization failed: {e}")
+        raise
     yield
-    # clean up
 
 
 app = FastAPI(lifespan=lifespan)

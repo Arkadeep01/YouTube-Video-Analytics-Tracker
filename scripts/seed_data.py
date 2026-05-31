@@ -3,8 +3,7 @@
 Usage:
     python scripts/seed_data.py
 
-Requires DATABASE_URL env var, or defaults to local non-Docker connection:
-    postgresql+psycopg://time-user:time-pw@localhost:5432/timescaledb
+Requires DATABASE_URL env var, or falls back to a default local connection if unset.
 """
 
 import os
@@ -12,23 +11,21 @@ import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from sqlmodel import select, delete, true
+from sqlmodel import select, delete, true, Session, SQLModel
+from sqlalchemy import create_engine
 
 _script_dir = os.path.dirname(os.path.abspath(__file__))
 _project_root = os.path.dirname(_script_dir)
 _src_candidate = os.path.join(_project_root, "src")
 sys.path.insert(0, _src_candidate if os.path.isdir(_src_candidate) else _project_root)
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg://time-user:time-pw@localhost:5432/timescaledb",
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    print("ERROR: DATABASE_URL environment variable is required.")
+    print("Usage: python scripts/seed_data.py")
+    sys.exit(1)
 
-from timescaledb import create_engine
-from timescaledb.utils import get_utc_now
-from sqlmodel import Session, SQLModel
-
-engine = create_engine(DATABASE_URL, timezone="utc")
+engine = create_engine(DATABASE_URL)
 
 VIDEOS = [
     {"video_id": "dQw4w9WgXcQ", "title": "Rick Astley - Never Gonna Give You Up", "duration": 212},
@@ -44,11 +41,9 @@ def seed(force=False):
     random.seed(42)
 
     SQLModel.metadata.create_all(engine)
-    import timescaledb
-    timescaledb.metadata.create_all(engine)
 
-    from ..src.api.video_events.models import YouTubeWatchEvent
-    from ..src.api.watch_sessions.models import WatchSession
+    from api.video_events.models import YouTubeWatchEvent
+    from api.watch_sessions.models import WatchSession
 
     with Session(engine) as session:
         existing = session.exec(
@@ -68,7 +63,7 @@ def seed(force=False):
             print("Cleared existing data.")
 
     print("Seeding database...")
-    now = get_utc_now()
+    now = datetime.now(timezone.utc)
 
     engagement_tiers = {
         "dQw4w9WgXcQ": {"sessions": 6, "depth": "high"},    # popular, long watch

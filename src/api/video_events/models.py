@@ -1,16 +1,20 @@
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
-from timescaledb import TimescaleModel
 from pydantic import BaseModel, Field as PydanticField
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Column, DateTime
+from sqlalchemy import text
 
 class YouTubeVideoData(BaseModel):
   title: str
 
-class YouTubeWatchEvent(TimescaleModel, table=True):
+class YouTubeWatchEvent(SQLModel, table=True):
   id: Optional[int] = Field(default=None, primary_key=True, sa_column_kwargs={"autoincrement": True})
-  is_ready: bool 
+  time: datetime = Field(
+    default_factory=lambda: datetime.now(timezone.utc),
+    sa_column=Column(DateTime(timezone=True), server_default=text("now()")),
+  )
+  is_ready: bool
   video_id: str = Field(index=True)
   video_title: str
   current_time: float
@@ -19,18 +23,9 @@ class YouTubeWatchEvent(TimescaleModel, table=True):
   referer: Optional[str] = Field(default="", index=True)
   watch_session_id: Optional[str] = Field(index=True)
 
-  # timescaledb config
-  __chunk_time_interval__ = "INTERVAL 7 days"
-  __drop_after__ = "INTERVAL 1 year"
-  __enable_compression__ = True
-  __compress_orderby__ = "time DESC"
-  __compress_segmentby__ = "video_id"  
-  __migrate_data__ = True
-  __if_not_exists__ = True
-
 
 class YouTubePlayerState(SQLModel, table=False):
-    is_ready: bool 
+    is_ready: bool
     video_id: str = Field(index=True)
     video_title: str
     current_time: float
